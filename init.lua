@@ -889,6 +889,34 @@ require('lazy').setup({
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
 
+      -- Configurable Lua functions to go forward/backward to a certain target.
+      require('mini.bracketed').setup {
+        -- First-level elements are tables describing behavior of a target:
+        --
+        -- - <suffix> - single character suffix. Used after `[` / `]` in mappings.
+        --   For example, with `b` creates `[B`, `[b`, `]b`, `]B` mappings.
+        --   Supply empty string `''` to not create mappings.
+        --
+        -- - <options> - table overriding target options.
+        --
+        -- See `:h MiniBracketed.config` for more info.
+
+        buffer = { suffix = '', options = {} },
+        comment = { suffix = 'c', options = {} },
+        conflict = { suffix = '', options = {} },
+        diagnostic = { suffix = 'd', options = {} },
+        file = { suffix = '', options = {} },
+        indent = { suffix = 'i', options = {} },
+        jump = { suffix = '', options = {} },
+        location = { suffix = '', options = {} },
+        oldfile = { suffix = '', options = {} },
+        quickfix = { suffix = 'q', options = {} },
+        treesitter = { suffix = '', options = {} },
+        undo = { suffix = '', options = {} },
+        window = { suffix = '', options = {} },
+        yank = { suffix = '', options = {} },
+      }
+
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,
       --  and try some other statusline plugin
