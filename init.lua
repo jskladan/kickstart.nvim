@@ -39,7 +39,7 @@ vim.o.showmode = false
 vim.o.breakindent = true
 
 -- Save undo history
-vim.o.undofile = true
+vim.o.undofile = false
 
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
 vim.o.ignorecase = true
@@ -410,8 +410,10 @@ require('lazy').setup({
       -- Useful status updates for LSP.
       { 'j-hui/fidget.nvim', opts = {} },
 
-      -- Allows extra capabilities provided by blink.cmp
-      'saghen/blink.cmp',
+      -- -- Allows extra capabilities provided by blink.cmp
+      -- 'saghen/blink.cmp',
+      -- Allows extra capabilities provided by nvim-cmp
+      'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -580,11 +582,18 @@ require('lazy').setup({
         },
       }
 
+      -- -- LSP servers and clients are able to communicate to each other what features they support.
+      -- --  By default, Neovim doesn't support everything that is in the LSP specification.
+      -- --  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
+      -- --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
+      -- local capabilities = require('blink.cmp').get_lsp_capabilities()
+
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
-      --  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
-      --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
-      local capabilities = require('blink.cmp').get_lsp_capabilities()
+      --  When you add nvim-cmp, luasnip, etc. Neovim now has *more* capabilities.
+      --  So, we create new capabilities with nvim cmp, and then broadcast that to the servers.
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
 
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -728,15 +737,157 @@ require('lazy').setup({
     },
   },
 
+  -- FIXME:
+  -- For some reason, when I use blink.cmp, the <Tab> in insert mode just gets fucked up.
+  -- I think this has something to do with snippets, but I'm giving up on this after three hours
+  -- Would be nice to use blink - it looks way better than nvim_cmp
+
+  -- { -- Autocompletion
+  --   'saghen/blink.cmp',
+  --   event = 'VimEnter',
+  --   version = '1.*',
+  --   dependencies = {
+  --     -- Snippet Engine
+  --     {
+  --       'L3MON4D3/LuaSnip',
+  --       version = '2.*',
+  --       build = (function()
+  --         -- Build Step is needed for regex support in snippets.
+  --         -- This step is not supported in many windows environments.
+  --         -- Remove the below condition to re-enable on windows.
+  --         if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
+  --           return
+  --         end
+  --         return 'make install_jsregexp'
+  --       end)(),
+  --       dependencies = {
+  --         -- `friendly-snippets` contains a variety of premade snippets.
+  --         --    See the README about individual language/framework/plugin snippets:
+  --         --    https://github.com/rafamadriz/friendly-snippets
+  --         {
+  --           'rafamadriz/friendly-snippets',
+  --           config = function()
+  --             require('luasnip.loaders.from_vscode').lazy_load()
+  --           end,
+  --         },
+  --       },
+  --       opts = {},
+  --     },
+  --     'folke/lazydev.nvim',
+  --   },
+  --   --- @module 'blink.cmp'
+  --   --- @type blink.cmp.Config
+  --   opts = {
+  --     keymap = {
+  --       -- 'default' (recommended) for mappings similar to built-in completions
+  --       --   <c-y> to accept ([y]es) the completion.
+  --       --    This will auto-import if your LSP supports it.
+  --       --    This will expand snippets if the LSP sent a snippet.
+  --       -- 'super-tab' for tab to accept
+  --       -- 'enter' for enter to accept
+  --       -- 'none' for no mappings
+  --       --
+  --       -- For an understanding of why the 'default' preset is recommended,
+  --       -- you will need to read `:help ins-completion`
+  --       --
+  --       -- No, but seriously. Please read `:help ins-completion`, it is really good!
+  --       --
+  --       -- All presets have the following mappings:
+  --       -- <tab>/<s-tab>: move to right/left of your snippet expansion
+  --       -- <c-space>: Open menu or open docs if already open
+  --       -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
+  --       -- <c-e>: Hide menu
+  --       -- <c-k>: Toggle signature help
+  --       --
+  --       -- See :h blink-cmp-config-keymap for defining your own keymap
+  --       preset = 'super-tab',
+  --
+  --       -- FIXME:
+  --       -- <Esc> to exit/abort completion menu instead of C-e
+  --       -- C-u/C-d to scroll in docs
+  --       -- Try to setup C-n/C-P to show menu if not shown, navigate if shown
+  --       -- ['<Tab>'] = { 'fallback' },
+  --
+  --       ['<Tab>'] = {
+  --         function(cmp)
+  --           if cmp.snippet_active() then
+  --             return cmp.accept()
+  --           else
+  --             return cmp.select_and_accept()
+  --           end
+  --         end,
+  --         'snippet_forward',
+  --         'fallback',
+  --       },
+  --       -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
+  --       --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+  --     },
+  --
+  --     appearance = {
+  --       -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
+  --       -- Adjusts spacing to ensure icons are aligned
+  --       nerd_font_variant = 'mono',
+  --     },
+  --
+  --     completion = {
+  --       -- -- 'prefix' will fuzzy match on the text before the cursor
+  --       -- -- 'full' will fuzzy match on the text before _and_ after the cursor
+  --       -- -- example: 'foo_|_bar' will match 'foo_' for 'prefix' and 'foo__bar' for 'full'
+  --       -- keyword = { range = 'full' },
+  --
+  --       -- -- Don't select by default, auto insert on selection
+  --       -- list = { selection = { preselect = false, auto_insert = true } },
+  --
+  --       menu = {
+  --         -- Don't automatically show the completion menu
+  --         auto_show = false,
+  --
+  --         -- nvim-cmp style menu
+  --         draw = {
+  --           columns = {
+  --             { 'label', 'label_description', gap = 1 },
+  --             { 'kind_icon', 'kind' },
+  --           },
+  --         },
+  --       },
+  --       -- By default, you may press `<c-space>` to show the documentation.
+  --       -- Optionally, set `auto_show = true` to show the documentation after a delay.
+  --       documentation = { auto_show = true, auto_show_delay_ms = 500 },
+  --
+  --       -- Display a preview of the selected item on the current line
+  --       ghost_text = { enabled = true },
+  --     },
+  --
+  --     sources = {
+  --       default = { 'lsp', 'path', 'snippets', 'lazydev' },
+  --       providers = {
+  --         lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+  --       },
+  --     },
+  --
+  --     snippets = { preset = 'luasnip' },
+  --
+  --     -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
+  --     -- which automatically downloads a prebuilt binary when enabled.
+  --     --
+  --     -- By default, we use the Lua implementation instead, but you may enable
+  --     -- the rust implementation via `'prefer_rust_with_warning'`
+  --     --
+  --     -- See :h blink-cmp-config-fuzzy for more information
+  --     fuzzy = { implementation = 'lua' },
+  --
+  --     -- Shows a signature help window while you type arguments for a function
+  --     signature = { enabled = true },
+  --   },
+  -- },
+
   { -- Autocompletion
-    'saghen/blink.cmp',
-    event = 'VimEnter',
-    version = '1.*',
+    'hrsh7th/nvim-cmp',
+    event = 'InsertEnter',
     dependencies = {
-      -- Snippet Engine
+      -- Snippet Engine & its associated nvim-cmp source
       {
         'L3MON4D3/LuaSnip',
-        version = '2.*',
         build = (function()
           -- Build Step is needed for regex support in snippets.
           -- This step is not supported in many windows environments.
@@ -757,279 +908,176 @@ require('lazy').setup({
           --   end,
           -- },
         },
-        opts = {},
       },
-      'folke/lazydev.nvim',
+      'saadparwaiz1/cmp_luasnip',
+
+      -- Adds other completion capabilities.
+      --  nvim-cmp does not ship with all sources by default. They are split
+      --  into multiple repos for maintenance purposes.
+      'hrsh7th/cmp-nvim-lsp',
+      'hrsh7th/cmp-path',
     },
-    --- @module 'blink.cmp'
-    --- @type blink.cmp.Config
-    opts = {
-      keymap = {
-        -- 'default' (recommended) for mappings similar to built-in completions
-        --   <c-y> to accept ([y]es) the completion.
-        --    This will auto-import if your LSP supports it.
-        --    This will expand snippets if the LSP sent a snippet.
-        -- 'super-tab' for tab to accept
-        -- 'enter' for enter to accept
-        -- 'none' for no mappings
-        --
-        -- For an understanding of why the 'default' preset is recommended,
-        -- you will need to read `:help ins-completion`
-        --
-        -- No, but seriously. Please read `:help ins-completion`, it is really good!
-        --
-        -- All presets have the following mappings:
-        -- <tab>/<s-tab>: move to right/left of your snippet expansion
-        -- <c-space>: Open menu or open docs if already open
-        -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-        -- <c-e>: Hide menu
-        -- <c-k>: Toggle signature help
-        --
-        -- See :h blink-cmp-config-keymap for defining your own keymap
-        preset = 'enter',
+    config = function()
+      -- See `:help cmp`
+      local cmp = require 'cmp'
+      local luasnip = require 'luasnip'
+      luasnip.config.setup {}
 
-        -- FIXME:
-        -- <Esc> to exit/abort completion menu instead of C-e
-        -- C-u/C-d to scroll in docs
-        -- Try to setup C-n/C-P to show menu if not shown, navigate if shown
-
-        -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-        --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
-      },
-
-      appearance = {
-        -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
-        -- Adjusts spacing to ensure icons are aligned
-        nerd_font_variant = 'mono',
-      },
-
-      completion = {
-        -- By default, you may press `<c-space>` to show the documentation.
-        -- Optionally, set `auto_show = true` to show the documentation after a delay.
-        documentation = { auto_show = false, auto_show_delay_ms = 500 },
-      },
-
-      sources = {
-        default = { 'lsp', 'path', 'snippets', 'lazydev' },
-        providers = {
-          lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+      cmp.setup {
+        snippet = {
+          expand = function(args)
+            luasnip.lsp_expand(args.body)
+          end,
         },
-      },
+        completion = { completeopt = 'menu,menuone,noinsert' },
 
-      snippets = { preset = 'luasnip' },
+        -- -- For an understanding of why these mappings were
+        -- -- chosen, you will need to read `:help ins-completion`
+        -- --
+        -- -- No, but seriously. Please read `:help ins-completion`, it is really good!
+        -- mapping = cmp.mapping.preset.insert {
+        --   -- Select the [n]ext item
+        --   ['<C-n>'] = cmp.mapping.select_next_item(),
+        --   -- Select the [p]revious item
+        --   ['<C-p>'] = cmp.mapping.select_prev_item(),
+        --
+        --   -- Scroll the documentation window [b]ack / [f]orward
+        --   ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+        --   ['<C-f>'] = cmp.mapping.scroll_docs(4),
+        --
+        --   -- Accept ([y]es) the completion.
+        --   --  This will auto-import if your LSP supports it.
+        --   --  This will expand snippets if the LSP sent a snippet.
+        --   ['<C-y>'] = cmp.mapping.confirm { select = true },
+        --
+        --   -- If you prefer more traditional completion keymaps,
+        --   -- you can uncomment the following lines
+        --   --['<CR>'] = cmp.mapping.confirm { select = true },
+        --   --['<Tab>'] = cmp.mapping.select_next_item(),
+        --   --['<S-Tab>'] = cmp.mapping.select_prev_item(),
+        --
+        --   -- Manually trigger a completion from nvim-cmp.
+        --   --  Generally you don't need this, because nvim-cmp will display
+        --   --  completions whenever it has completion options available.
+        --   ['<C-Space>'] = cmp.mapping.complete {},
+        --
+        --   -- Think of <c-l> as moving to the right of your snippet expansion.
+        --   --  So if you have a snippet that's like:
+        --   --  function $name($args)
+        --   --    $body
+        --   --  end
+        --   --
+        --   -- <c-l> will move you to the right of each of the expansion locations.
+        --   -- <c-h> is similar, except moving you backwards.
+        --   ['<C-l>'] = cmp.mapping(function()
+        --     if luasnip.expand_or_locally_jumpable() then
+        --       luasnip.expand_or_jump()
+        --     end
+        --   end, { 'i', 's' }),
+        --   ['<C-h>'] = cmp.mapping(function()
+        --     if luasnip.locally_jumpable(-1) then
+        --       luasnip.jump(-1)
+        --     end
+        --   end, { 'i', 's' }),
+        --
+        -- -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
+        -- --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
 
-      -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
-      -- which automatically downloads a prebuilt binary when enabled.
-      --
-      -- By default, we use the Lua implementation instead, but you may enable
-      -- the rust implementation via `'prefer_rust_with_warning'`
-      --
-      -- See :h blink-cmp-config-fuzzy for more information
-      fuzzy = { implementation = 'lua' },
+        mapping = cmp.mapping.preset.insert {
 
-      -- Shows a signature help window while you type arguments for a function
-      signature = { enabled = true },
-    },
+          -- Ctrl+Space to trigger completion menu
+          ['<C-Space>'] = cmp.mapping.complete(),
+
+          -- Esc to exit completion menu
+          ['<Esc>'] = cmp.mapping.abort(),
+
+          -- Use up/down to navigate inside the autocompletion window
+          ['<Up>'] = cmp.mapping.select_prev_item { behavior = 'insert' },
+          ['<Down>'] = cmp.mapping.select_next_item { behavior = 'insert' },
+
+          -- Ctrl+P/N to either show autocompletion window, or navigate in it if shown already
+          ['<C-p>'] = cmp.mapping(function()
+            if cmp.visible() then
+              cmp.select_prev_item { behavior = 'insert' }
+            else
+              cmp.complete()
+            end
+          end),
+          ['<C-n>'] = cmp.mapping(function()
+            if cmp.visible() then
+              cmp.select_next_item { behavior = 'insert' }
+            else
+              cmp.complete()
+            end
+          end),
+
+          ['<CR>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              if luasnip.expandable() then
+                luasnip.expand()
+              else
+                cmp.confirm {
+                  select = true,
+                }
+              end
+            else
+              fallback()
+            end
+          end),
+
+          ['<Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.confirm {
+                select = true,
+              }
+              -- cmp.select_next_item()
+            elseif luasnip.locally_jumpable(1) then
+              luasnip.jump(1)
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
+
+          ['<S-Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            elseif luasnip.locally_jumpable(-1) then
+              luasnip.jump(-1)
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
+
+          -- -- Super Tab
+          -- --   If the completion menu is visible it will navigate to the next item in the list.
+          -- --   If the cursor is on top of a "snippet trigger" it'll expand it.
+          -- --   If the cursor can jump to a snippet placeholder, it moves to it.
+          -- --   If the cursor is in the middle of a word it displays the completion menu.
+          -- --   Else, it acts like a regular Tab key.
+          -- ['<Tab>'] = cmp_action.luasnip_supertab(),
+          -- ['<S-Tab>'] = cmp_action.luasnip_shift_supertab(),
+          --
+          -- -- Navigate between snippet placeholder (not necessary if using supertab, keeping for future reference)
+          -- ['<C-f>'] = cmp_action.luasnip_jump_forward(),
+          -- ['<C-b>'] = cmp_action.luasnip_jump_backward(),
+
+          -- Scroll up and down in the completion documentation
+          ['<C-u>'] = cmp.mapping.scroll_docs(-4),
+          ['<C-d>'] = cmp.mapping.scroll_docs(4),
+        },
+        sources = {
+          {
+            name = 'lazydev',
+            -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
+            group_index = 0,
+          },
+          { name = 'nvim_lsp' },
+          { name = 'luasnip' },
+          { name = 'path' },
+        },
+      }
+    end,
   },
-
-  -- { -- Autocompletion
-  --   'hrsh7th/nvim-cmp',
-  --   event = 'InsertEnter',
-  --   dependencies = {
-  --     -- Snippet Engine & its associated nvim-cmp source
-  --     {
-  --       'L3MON4D3/LuaSnip',
-  --       build = (function()
-  --         -- Build Step is needed for regex support in snippets.
-  --         -- This step is not supported in many windows environments.
-  --         -- Remove the below condition to re-enable on windows.
-  --         if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
-  --           return
-  --         end
-  --         return 'make install_jsregexp'
-  --       end)(),
-  --       dependencies = {
-  --         -- `friendly-snippets` contains a variety of premade snippets.
-  --         --    See the README about individual language/framework/plugin snippets:
-  --         --    https://github.com/rafamadriz/friendly-snippets
-  --         -- {
-  --         --   'rafamadriz/friendly-snippets',
-  --         --   config = function()
-  --         --     require('luasnip.loaders.from_vscode').lazy_load()
-  --         --   end,
-  --         -- },
-  --       },
-  --     },
-  --     'saadparwaiz1/cmp_luasnip',
-  --
-  --     -- Adds other completion capabilities.
-  --     --  nvim-cmp does not ship with all sources by default. They are split
-  --     --  into multiple repos for maintenance purposes.
-  --     'hrsh7th/cmp-nvim-lsp',
-  --     'hrsh7th/cmp-path',
-  --   },
-  --   config = function()
-  --     -- See `:help cmp`
-  --     local cmp = require 'cmp'
-  --     local luasnip = require 'luasnip'
-  --     luasnip.config.setup {}
-  --
-  --     cmp.setup {
-  --       snippet = {
-  --         expand = function(args)
-  --           luasnip.lsp_expand(args.body)
-  --         end,
-  --       },
-  --       completion = { completeopt = 'menu,menuone,noinsert' },
-  --
-  --       -- -- For an understanding of why these mappings were
-  --       -- -- chosen, you will need to read `:help ins-completion`
-  --       -- --
-  --       -- -- No, but seriously. Please read `:help ins-completion`, it is really good!
-  --       -- mapping = cmp.mapping.preset.insert {
-  --       --   -- Select the [n]ext item
-  --       --   ['<C-n>'] = cmp.mapping.select_next_item(),
-  --       --   -- Select the [p]revious item
-  --       --   ['<C-p>'] = cmp.mapping.select_prev_item(),
-  --       --
-  --       --   -- Scroll the documentation window [b]ack / [f]orward
-  --       --   ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-  --       --   ['<C-f>'] = cmp.mapping.scroll_docs(4),
-  --       --
-  --       --   -- Accept ([y]es) the completion.
-  --       --   --  This will auto-import if your LSP supports it.
-  --       --   --  This will expand snippets if the LSP sent a snippet.
-  --       --   ['<C-y>'] = cmp.mapping.confirm { select = true },
-  --       --
-  --       --   -- If you prefer more traditional completion keymaps,
-  --       --   -- you can uncomment the following lines
-  --       --   --['<CR>'] = cmp.mapping.confirm { select = true },
-  --       --   --['<Tab>'] = cmp.mapping.select_next_item(),
-  --       --   --['<S-Tab>'] = cmp.mapping.select_prev_item(),
-  --       --
-  --       --   -- Manually trigger a completion from nvim-cmp.
-  --       --   --  Generally you don't need this, because nvim-cmp will display
-  --       --   --  completions whenever it has completion options available.
-  --       --   ['<C-Space>'] = cmp.mapping.complete {},
-  --       --
-  --       --   -- Think of <c-l> as moving to the right of your snippet expansion.
-  --       --   --  So if you have a snippet that's like:
-  --       --   --  function $name($args)
-  --       --   --    $body
-  --       --   --  end
-  --       --   --
-  --       --   -- <c-l> will move you to the right of each of the expansion locations.
-  --       --   -- <c-h> is similar, except moving you backwards.
-  --       --   ['<C-l>'] = cmp.mapping(function()
-  --       --     if luasnip.expand_or_locally_jumpable() then
-  --       --       luasnip.expand_or_jump()
-  --       --     end
-  --       --   end, { 'i', 's' }),
-  --       --   ['<C-h>'] = cmp.mapping(function()
-  --       --     if luasnip.locally_jumpable(-1) then
-  --       --       luasnip.jump(-1)
-  --       --     end
-  --       --   end, { 'i', 's' }),
-  --       --
-  --       -- -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-  --       -- --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
-  --
-  --       mapping = cmp.mapping.preset.insert {
-  --
-  --         -- Ctrl+Space to trigger completion menu
-  --         ['<C-Space>'] = cmp.mapping.complete(),
-  --
-  --         -- Esc to exit completion menu
-  --         ['<Esc>'] = cmp.mapping.abort(),
-  --
-  --         -- Use up/down to navigate inside the autocompletion window
-  --         ['<Up>'] = cmp.mapping.select_prev_item { behavior = 'insert' },
-  --         ['<Down>'] = cmp.mapping.select_next_item { behavior = 'insert' },
-  --
-  --         -- Ctrl+P/N to either show autocompletion window, or navigate in it if shown already
-  --         ['<C-p>'] = cmp.mapping(function()
-  --           if cmp.visible() then
-  --             cmp.select_prev_item { behavior = 'insert' }
-  --           else
-  --             cmp.complete()
-  --           end
-  --         end),
-  --         ['<C-n>'] = cmp.mapping(function()
-  --           if cmp.visible() then
-  --             cmp.select_next_item { behavior = 'insert' }
-  --           else
-  --             cmp.complete()
-  --           end
-  --         end),
-  --
-  --         ['<CR>'] = cmp.mapping(function(fallback)
-  --           if cmp.visible() then
-  --             if luasnip.expandable() then
-  --               luasnip.expand()
-  --             else
-  --               cmp.confirm {
-  --                 select = true,
-  --               }
-  --             end
-  --           else
-  --             fallback()
-  --           end
-  --         end),
-  --
-  --         ['<Tab>'] = cmp.mapping(function(fallback)
-  --           if cmp.visible() then
-  --             cmp.confirm {
-  --               select = true,
-  --             }
-  --             -- cmp.select_next_item()
-  --           elseif luasnip.locally_jumpable(1) then
-  --             luasnip.jump(1)
-  --           else
-  --             fallback()
-  --           end
-  --         end, { 'i', 's' }),
-  --
-  --         ['<S-Tab>'] = cmp.mapping(function(fallback)
-  --           if cmp.visible() then
-  --             cmp.select_prev_item()
-  --           elseif luasnip.locally_jumpable(-1) then
-  --             luasnip.jump(-1)
-  --           else
-  --             fallback()
-  --           end
-  --         end, { 'i', 's' }),
-  --
-  --         -- -- Super Tab
-  --         -- --   If the completion menu is visible it will navigate to the next item in the list.
-  --         -- --   If the cursor is on top of a "snippet trigger" it'll expand it.
-  --         -- --   If the cursor can jump to a snippet placeholder, it moves to it.
-  --         -- --   If the cursor is in the middle of a word it displays the completion menu.
-  --         -- --   Else, it acts like a regular Tab key.
-  --         -- ['<Tab>'] = cmp_action.luasnip_supertab(),
-  --         -- ['<S-Tab>'] = cmp_action.luasnip_shift_supertab(),
-  --         --
-  --         -- -- Navigate between snippet placeholder (not necessary if using supertab, keeping for future reference)
-  --         -- ['<C-f>'] = cmp_action.luasnip_jump_forward(),
-  --         -- ['<C-b>'] = cmp_action.luasnip_jump_backward(),
-  --
-  --         -- Scroll up and down in the completion documentation
-  --         ['<C-u>'] = cmp.mapping.scroll_docs(-4),
-  --         ['<C-d>'] = cmp.mapping.scroll_docs(4),
-  --       },
-  --       sources = {
-  --         {
-  --           name = 'lazydev',
-  --           -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
-  --           group_index = 0,
-  --         },
-  --         { name = 'nvim_lsp' },
-  --         { name = 'luasnip' },
-  --         { name = 'path' },
-  --       },
-  --     }
-  --   end,
-  -- },
-  --
 
   -- { -- You can easily change to a different colorscheme.
   --   -- Change the name of the colorscheme plugin below, and then
