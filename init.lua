@@ -164,7 +164,7 @@ rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
+  { 'NMAC427/guess-indent.nvim', opts = {} }, -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -264,6 +264,7 @@ require('lazy').setup({
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { 'gr', group = 'LSP Actions', mode = { 'n' } },
       },
     },
   },
@@ -356,6 +357,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+      vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
@@ -404,7 +406,8 @@ require('lazy').setup({
       -- Mason must be loaded before its dependents so we need to set it up here.
       -- NOTE: `opts = {}` is the same as calling `require('mason').setup({})`
       { 'mason-org/mason.nvim', opts = {} },
-      'mason-org/mason-lspconfig.nvim',
+      -- 'mason-org/mason-lspconfig.nvim',
+      { 'mason-org/mason-lspconfig.nvim' }, -- https://github.com/nvim-lua/kickstart.nvim/pull/1663/files
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
       -- Useful status updates for LSP.
@@ -620,6 +623,7 @@ require('lazy').setup({
             },
           },
         },
+        -- ruff = {},
         pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -647,6 +651,15 @@ require('lazy').setup({
         },
       }
 
+      -- https://github.com/nvim-lua/kickstart.nvim/pull/1663/files
+      -- The following loop will configure each server with the capabilities we defined above.
+      -- This will ensure that all servers have the same base configuration, but also
+      -- allow for server-specific overrides.
+      for server_name, server_config in pairs(servers) do
+        server_config.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_config.capabilities or {})
+        require('lspconfig')[server_name].setup(server_config)
+      end
+
       -- Ensure the servers and tools above are installed
       --
       -- To check the current status of installed tools and/or manually install
@@ -672,20 +685,21 @@ require('lazy').setup({
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-      require('mason-lspconfig').setup {
-        ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = false,
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
-      }
+      -- https://github.com/nvim-lua/kickstart.nvim/pull/1663/files
+      -- require('mason-lspconfig').setup {
+      --   ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
+      --   automatic_installation = false,
+      --   handlers = {
+      --     function(server_name)
+      --       local server = servers[server_name] or {}
+      --       -- This handles overriding only values explicitly passed
+      --       -- by the server configuration above. Useful when disabling
+      --       -- certain features of an LSP (for example, turning off formatting for ts_ls)
+      --       server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+      --       require('lspconfig')[server_name].setup(server)
+      --     end,
+      --   },
+      -- }
     end,
   },
 
@@ -1074,6 +1088,7 @@ require('lazy').setup({
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
+          { name = 'buffer' },
         },
       }
     end,
@@ -1105,7 +1120,7 @@ require('lazy').setup({
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
   { -- Collection of various small independent plugins/modules
-    'echasnovski/mini.nvim',
+    'nvim-mini/mini.nvim',
     config = function()
       -- Better Around/Inside textobjects
       --
@@ -1138,7 +1153,7 @@ require('lazy').setup({
       end
 
       -- ... and there is more!
-      --  Check out: https://github.com/echasnovski/mini.nvim
+      --  Check out: https://github.com/nvim-mini/mini.nvim
 
       -- Configurable Lua functions to go forward/backward to a certain target.
       require('mini.bracketed').setup {

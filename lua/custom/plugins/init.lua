@@ -103,4 +103,20 @@ return {
       vim.keymap.set('n', '<leader>e', NvimTree_smart_toggle, { desc = 'Toggle file [E]xplorer' })
     end,
   },
+  {
+    'm-gail/diagnostic_manipulation.nvim',
+    event = 'VeryLazy',
+    init = function()
+      require('diagnostic_manipulation').setup {
+        blacklist = {
+          function(diagnostic)
+            return string.find(diagnostic.message, '" is not a known attribute of "None"')
+          end,
+        },
+        whitelist = {
+          -- Your whitelist here
+        },
+      }
+    end,
+  },
 }
